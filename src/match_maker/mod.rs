@@ -100,7 +100,7 @@ impl MatchMaker {
 
 
     pub async fn start(&mut self) {
-        let round_duration = tokio::time::Duration::from_secs(30); // 4 minutes per round
+        let round_duration = tokio::time::Duration::from_secs(60 * 4); // 4 minutes per round
 
         loop {
             let mut pot = 0;
@@ -326,7 +326,7 @@ impl MatchMaker {
             println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
             println!("{}=---=---=---=---=---=---= Round over! =---=---=---=---=---=---={}", CL::Pink.get(), CL::End.get());
             println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
-            println!("\n");
+            println!("");
             
             println!("=------------ Game Details ------------=");
             println!("{} - Players: {}x{}", CL::Dull.get(), self.player_names.len(), CL::End.get());
