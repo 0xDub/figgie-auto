@@ -63,24 +63,37 @@ impl MatchMaker {
         self.common_suit = self.suits[self.rng.gen_range(0..=3)].clone();
     }
 
-    pub fn get_new_inventories(&mut self) {
+    pub fn get_new_inventories(&mut self) -> HashMap<Card, usize> {
         let mut cards: Vec<Card> = Vec::new();
         let (goal_suit, suit_1, suit_2) = self.common_suit.get_other_cards();
         self.goal_suit = goal_suit.clone();
 
         for _ in 0..12 { cards.push(self.common_suit.clone()) }
+        
+        let mut starting_inventory = HashMap::new();
+
+        println!("=---= Card Count =---=");
+        println!("{} - {:?} | 12x{}", CL::Dull.get(), self.common_suit, CL::End.get());
+        starting_inventory.insert(self.common_suit.clone(), 12);
 
         // randomly pick one of the other 3 suits to be the one with 8 cards
-        let already_lucky = false;
+        let mut already_lucky = false;
         for (idx, suit) in [suit_1, suit_2, goal_suit].iter().enumerate() {
             let lucky_eight = rand::random::<bool>();
             if idx == 2 && !already_lucky {
                 for _ in 0..8 { cards.push(suit.clone()) }
+                println!("{} - {:?} | 8x{}", CL::Dull.get(), suit, CL::End.get());
+                starting_inventory.insert(suit.clone(), 8);
             } else {
                 if !already_lucky && lucky_eight {
                     for _ in 0..8 { cards.push(suit.clone()) }
+                    println!("{} - {:?} | 8x{}", CL::Dull.get(), suit, CL::End.get());
+                    starting_inventory.insert(suit.clone(), 8);
+                    already_lucky = true;
                 } else {
                     for _ in 0..10 { cards.push(suit.clone()) }
+                    println!("{} - {:?} | 10x{}", CL::Dull.get(), suit, CL::End.get());
+                    starting_inventory.insert(suit.clone(), 10);
                 }
             }
         }
@@ -95,6 +108,8 @@ impl MatchMaker {
             player_inventory.count(chunks[i].to_vec());
             self.player_inventories.insert(player_name.clone(), player_inventory.clone());
         }
+
+        starting_inventory
     }
 
 
@@ -107,9 +122,12 @@ impl MatchMaker {
             let ante = 200 / self.player_names.len();
 
             println!("{}==================== ROUND {} ===================={}", CL::Purple.get(), self.round, CL::End.get());
+            println!("");
+            println!("=---= Game Details =---=");
             println!("{} - Players: {}x{}", CL::Dull.get(), self.player_names.len(), CL::End.get());
             println!("{} - Ante: {}{}", CL::Dull.get(), ante, CL::End.get());
             println!("{} - Pot: 200{}", CL::Dull.get(), CL::End.get());
+            println!("");
             
             let initial_points = self.player_points.clone();
             for (player, points) in self.player_points.iter_mut() {
@@ -122,7 +140,7 @@ impl MatchMaker {
             }
 
             self.pick_new_common_suit();
-            self.get_new_inventories();
+            let starting_inventory = self.get_new_inventories();
 
             println!("{} - Common suit: {:?}{}", CL::Dull.get(), self.common_suit, CL::End.get());
             println!("{} - Goal suit: {}{:?}{}{}", CL::Dull.get(), CL::LimeGreen.get(), self.goal_suit, CL::End.get(), CL::End.get());
@@ -169,26 +187,19 @@ impl MatchMaker {
 
 
                                 // =-= Update the Inventories =-= //
-                                // add to the buyer
                                 let buyer_inventory = self.player_inventories.get_mut(&order.player_name).unwrap();
-                                buyer_inventory.change(order.card.clone(), 1);
+                                buyer_inventory.change(order.card.clone(), true);
 
-                                // subtract from the seller
-                                let seller_id = book.ask.player_name.clone();
-                                let seller_inventory = self.player_inventories.get_mut(&seller_id).unwrap();
-                                seller_inventory.change(order.card.clone(), -1);
+                                let seller_inventory = self.player_inventories.get_mut(&book.ask.player_name).unwrap();
+                                seller_inventory.change(order.card.clone(), false);
 
 
                                 // =-= Update the Points =-= //
-                                // add to the seller (current best player_id of the ask)
-                                let seller_id = book.ask.player_name.clone();
-                                let seller_points = self.player_points.get_mut(&seller_id).unwrap();
-                                *seller_points += book.ask.price;
-
-                                // subtract from the buyer
-                                let buyer_id = order.player_name;
-                                let buyer_points = self.player_points.get_mut(&buyer_id).unwrap();
+                                let buyer_points = self.player_points.get_mut(&order.player_name).unwrap();
                                 *buyer_points -= book.ask.price;
+
+                                let seller_points = self.player_points.get_mut(&book.ask.player_name).unwrap();
+                                *seller_points += book.ask.price;
 
 
                                 // =-= Package Trade =-= //
@@ -196,8 +207,8 @@ impl MatchMaker {
                                 let trade = Trade {
                                     card: order.card.clone(),
                                     price: book.ask.price,
-                                    buyer: buyer_id,
-                                    seller: seller_id,
+                                    buyer: order.player_name,
+                                    seller: book.ask.player_name.clone(),
                                 };
                                 Some(trade)
 
@@ -223,35 +234,28 @@ impl MatchMaker {
                                 println!("{}[-] Aggressing Player: {:?} | {:?} |:| Matched sell order!{}", CL::Red.get(), order.player_name, order.card, CL::End.get());
 
                                 // =-= Update the Inventories =-= //
-                                // add to the buyer
-                                let buyer_inventory = self.player_inventories.get_mut(&order.player_name).unwrap();
-                                buyer_inventory.change(order.card.clone(), 1);
+                                let buyer_inventory = self.player_inventories.get_mut(&book.bid.player_name).unwrap();
+                                buyer_inventory.change(order.card.clone(), true);
 
-                                // subtract from the seller
-                                let seller_id = book.bid.player_name.clone();
-                                let seller_inventory = self.player_inventories.get_mut(&seller_id).unwrap();
-                                seller_inventory.change(order.card.clone(), -1);
+                                let seller_inventory = self.player_inventories.get_mut(&order.player_name).unwrap();
+                                seller_inventory.change(order.card.clone(), false);
 
 
                                 // =-= Update the Points =-= //
-                                // add to the seller (current best player_id of the bid)
-                                let seller_id = book.bid.player_name.clone();
-                                let seller_points = self.player_points.get_mut(&seller_id).unwrap();
+                                let buyer_points = self.player_points.get_mut(&book.bid.player_name).unwrap();
+                                *buyer_points -= book.bid.price;
+
+                                let seller_points = self.player_points.get_mut(&order.player_name).unwrap();
                                 *seller_points += book.bid.price;
 
-                                // subtract from the buyer
-                                let buyer_id = order.player_name;
-                                let buyer_points = self.player_points.get_mut(&buyer_id).unwrap();
-                                *buyer_points -= book.bid.price;
-                                
 
                                 // =-= Package Trade =-= //
                                 book.last_trade = Some(book.bid.price);
                                 let trade = Trade {
                                     card: order.card.clone(),
                                     price: book.bid.price,
-                                    buyer: buyer_id,
-                                    seller: seller_id,
+                                    buyer: book.bid.player_name.clone(),
+                                    seller: order.player_name,
                                 };
                                 Some(trade)
 
@@ -330,10 +334,15 @@ impl MatchMaker {
             println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
             println!("");
             
-            println!("=--------- Game Details ---------=");
+            println!("=---= Game Details =---=");
             println!("{} - Players: {}x{}", CL::Dull.get(), self.player_names.len(), CL::End.get());
             println!("{} - Ante: {}{}", CL::Dull.get(), ante, CL::End.get());
             println!("{} - Pot: {}{}", CL::Dull.get(), pot, CL::End.get());
+            println!("");
+            println!("=---= Card Count =---=");
+            for (suit, amount) in starting_inventory {
+                println!("{} - {:?} | {}x{}", CL::Dull.get(), suit, amount, CL::End.get());
+            }
             println!("{} - Common suit: {:?}{}", CL::Dull.get(), self.common_suit, CL::End.get());
             println!("{} - Goal suit: {}{:?}{}{}", CL::Dull.get(), CL::LimeGreen.get(), self.goal_suit, CL::End.get(), CL::End.get());
             println!("");

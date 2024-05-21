@@ -30,12 +30,44 @@ impl Inventory {
         }
     }
 
-    pub fn change(&mut self, card: Card, amount: i32) {
+    pub fn change(&mut self, card: Card, add: bool) {
         match card {
-            Card::Spade => self.spades = (self.spades as i32 + amount) as usize,
-            Card::Club => self.clubs = (self.clubs as i32 + amount) as usize,
-            Card::Diamond => self.diamonds = (self.diamonds as i32 + amount) as usize,
-            Card::Heart => self.hearts = (self.hearts as i32 + amount) as usize,
+            Card::Spade => {
+                let new_amount: usize;
+                if add {
+                    new_amount = self.spades + 1;
+                } else {
+                    new_amount = self.spades - 1;
+                }
+                self.spades = new_amount;
+            },
+            Card::Club => {
+                let new_amount: usize;
+                if add {
+                    new_amount = self.clubs + 1;
+                } else {
+                    new_amount = self.clubs - 1;
+                }
+                self.clubs = new_amount;
+            },
+            Card::Diamond => {
+                let new_amount: usize;
+                if add {
+                    new_amount = self.diamonds + 1;
+                } else {
+                    new_amount = self.diamonds - 1;
+                }
+                self.diamonds = new_amount;
+            },
+            Card::Heart => {
+                let new_amount: usize;
+                if add {
+                    new_amount = self.hearts + 1;
+                } else {
+                    new_amount = self.hearts - 1;
+                }
+                self.hearts = new_amount;
+            },
         }
     }
 

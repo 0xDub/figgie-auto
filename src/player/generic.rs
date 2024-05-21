@@ -109,68 +109,79 @@ impl GenericPlayer {
 
 
 
-    pub async fn send_order(&self, price: usize, direction: Direction, card: &Card) {
-        let order = Order {
-            player_name: self.name.clone(),
-            price,
-            direction,
-            card: card.clone(),
-        };
+    pub async fn send_order(&self, price: usize, direction: Direction, card: &Card, book: &Book) {
 
-        if self.verbose {
-            println!("{:?} |:| Sending order: {:?}", self.name, order);
+        let mut trade = false;
+        match direction {
+            Direction::Buy => {
+                if book.bid.price < price && book.bid.player_name != self.name {
+                    trade = true;
+                }
+            },
+            Direction::Sell => {
+                if book.ask.price > price && book.ask.player_name != self.name {
+                    trade = true;
+                }
+            }
         }
-
-        if let Err(e) = self.order_sender.send(order).await {
-            println!("[!] {:?} |:| Error sending order: {:?}", self.name, e);
+        
+        if trade {
+            let order = Order {
+                player_name: self.name.clone(),
+                price,
+                direction,
+                card: card.clone(),
+            };
+    
+            if self.verbose {
+                println!("{:?} |:| Sending order: {:?}", self.name, order);
+            }
+    
+            if let Err(e) = self.order_sender.send(order).await {
+                println!("[!] {:?} |:| Error sending order: {:?}", self.name, e);
+            }
         }
+        
     }
 
     pub async fn noisy_trader(&self, inventory: Inventory, spades_book: Book, clubs_book: Book, diamonds_book: Book, hearts_book: Book, rng: &mut StdRng,) {
+        let (random_card, current_inventory, book) = match rng.gen_range(1..=4) {
+            1 => (Card::Spade, inventory.spades, spades_book),
+            2 => (Card::Club, inventory.clubs, clubs_book),
+            3 => (Card::Diamond, inventory.diamonds, diamonds_book),
+            4 => (Card::Heart, inventory.hearts, hearts_book),
+            _ => (Card::Spade, 0, spades_book) // this should never happen
+        };
+        
         let is_buy = rand::random::<bool>();
         match is_buy {
             true => {
-                let (random_card, current_inventory, current_price) = match rng.gen_range(1..=4) {
-                    1 => (Card::Spade, inventory.spades, spades_book.bid.price),
-                    2 => (Card::Club, inventory.clubs, clubs_book.bid.price),
-                    3 => (Card::Diamond, inventory.diamonds, diamonds_book.bid.price),
-                    4 => (Card::Heart, inventory.hearts, hearts_book.bid.price),
-                    _ => (Card::Spade, 0, 0) // this should never happen
-                };
-
                 let price = rng.gen_range(1..15);
-                if current_inventory < 4 && price > current_price {
+                if current_inventory < 4 {
                     println!("NOISY |:| BUY | Random card: {:?} | Price: {}", random_card, price);
-                    self.send_order(price, Direction::Sell, &random_card).await;
+                    self.send_order(price, Direction::Sell, &random_card, &book).await;
                 }
             },
             false => {
-                let (random_card, current_inventory, current_price) = match rng.gen_range(1..=4) {
-                    1 => (Card::Spade, inventory.spades, spades_book.ask.price),
-                    2 => (Card::Club, inventory.clubs, clubs_book.ask.price),
-                    3 => (Card::Diamond, inventory.diamonds, diamonds_book.ask.price),
-                    4 => (Card::Heart, inventory.hearts, hearts_book.ask.price),
-                    _ => (Card::Spade, 0, 0) // this should never happen
-                };
-
                 let price = rng.gen_range(1..15);
-                if current_inventory > 0 && price < current_price {
+                if current_inventory > 0 {
                     println!("NOISY |:| SELL | Random card: {:?} | Price: {} | current_inventory: {}", random_card, price, current_inventory);
-                    self.send_order(price, Direction::Sell, &random_card).await;
+                    self.send_order(price, Direction::Sell, &random_card, &book).await;
                 }
             }
         }
     }
 
     pub async fn sell_inventory(&self, seconds_left: u64, inventory: usize, book: Book, card: Card) {
+        // to net even with 5 players, the inventory must be sold at an average price of ~5
         if inventory > 0 {
             if seconds_left > 30 {
-                if book.ask.price > 8 && book.ask.player_name != self.name {
-                    self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
+                if book.ask.price > 7 {
+                    self.send_order(book.ask.price - 1, Direction::Sell, &card, &book).await;
                 }
             } else {
-                if book.ask.price > 4 && book.ask.player_name != self.name {
-                    self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
+                if book.ask.price > 4 {
+                    self.send_order(book.ask.price - 1, Direction::Sell, &card, &book).await;
                 }
             }
         }
@@ -179,26 +190,31 @@ impl GenericPlayer {
     pub async fn provide_spread(&self, seconds_left: u64, inventory: usize, book: Book, card: Card) {
         if inventory > 0 {
             if let Some(last_trade) = book.last_trade {
-                let ask_price = (last_trade as f32 * 1.25).round() as usize;
-                if ask_price > 8 && ask_price < book.ask.price && book.ask.player_name != self.name {
-                    self.send_order(ask_price, Direction::Sell, &card).await;
+                if last_trade > 10 {
+                    // attach a premium
+                    let ask_price = (last_trade as f32 * 1.25).round() as usize;
+                    self.send_order(ask_price, Direction::Sell, &card, &book).await;
+                }
+                if book.ask.price > 10 {
+                    self.send_order(10, Direction::Sell, &card, &book).await;
                 }
             } else {
-                if book.ask.price > 11 && book.ask.player_name != self.name {
-                    self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
+                if book.ask.price > 7 {
+                    self.send_order(book.ask.price - 1, Direction::Sell, &card, &book).await;
                 }
             }
         } 
-        if seconds_left > 30 { // we expect flow to gradually become more toxic as time goes on, so we're going to attempt to avoid being picked off
+        if seconds_left > 20 { // we expect flow to gradually become more toxic as time goes on, so we're going to attempt to avoid being picked off
             if let Some(last_trade) = book.last_trade {
+                if last_trade < 4 {
+                    self.send_order(4, Direction::Buy, &card, &book).await;
+                }
                 let bid_price = (last_trade as f32 * 0.75).round() as usize;
-                if bid_price < 8 && bid_price > book.bid.price && book.bid.player_name != self.name {
-                    self.send_order(bid_price, Direction::Buy, &card).await;
+                if bid_price < 8 {
+                    self.send_order(bid_price, Direction::Buy, &card, &book).await;
                 }
             } else {
-                if book.bid.price < 5 && book.bid.player_name != self.name {
-                    self.send_order(book.bid.price + 1, Direction::Sell, &card).await;
-                }
+                self.send_order(book.bid.price + 1, Direction::Buy, &card, &book).await;
             }
         }
         
@@ -233,9 +249,9 @@ impl GenericPlayer {
 
                             let mut inventory_lock = inventory.lock().await;
                             if trade.buyer == name {
-                                inventory_lock.change(trade.card, 1);
+                                inventory_lock.change(trade.card, true);
                             } else if trade.seller == name {
-                                inventory_lock.change(trade.card, -1);
+                                inventory_lock.change(trade.card, false);
                             }
                         }
 

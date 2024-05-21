@@ -96,13 +96,11 @@ impl TiltInventory {
                     };
 
                     if seconds_left > 30 {
-                        if book.ask.price > 4 && current_inventory > 0 && book.ask.player_name != self.name {
-                            self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
+                        if book.ask.price > 4 && current_inventory > 0 {
+                            self.send_order(book.ask.price - 1, Direction::Sell, &card, &book).await;
                         }
                     } else {
-                        if book.ask.player_name != self.name {
-                            self.send_order(1, Direction::Sell, &card).await;
-                        }
+                        self.send_order(3, Direction::Sell, &card, &book).await; // 3 since this is the break-point between a blanket buy-all strategy becoming profitable buying up equal amounts of inventory at 3
                     }
                 }
             }
@@ -113,8 +111,8 @@ impl TiltInventory {
                 Card::Diamond => diamonds_book,
                 Card::Heart => hearts_book,
             };
-            if book.bid.price < 8 && book.bid.player_name != self.name {
-                self.send_order(book.bid.price + 1, Direction::Buy, &goal_suit).await;
+            if book.bid.price < 8 {
+                self.send_order(book.bid.price + 1, Direction::Buy, &goal_suit, &book).await;
             }
             
 
@@ -125,21 +123,39 @@ impl TiltInventory {
 
 
 
-    pub async fn send_order(&self, price: usize, direction: Direction, card: &Card) {
-        let order = Order {
-            player_name: self.name.clone(),
-            price,
-            direction,
-            card: card.clone(),
-        };
+    pub async fn send_order(&self, price: usize, direction: Direction, card: &Card, book: &Book) {
 
-        if self.verbose {
-            println!("{:?} |:| Sending order: {:?}", self.name, order);
+        let mut trade = false;
+        match direction {
+            Direction::Buy => {
+                if book.bid.price < price && book.bid.player_name != self.name {
+                    trade = true;
+                }
+            },
+            Direction::Sell => {
+                if book.ask.price > price && book.ask.player_name != self.name {
+                    trade = true;
+                }
+            }
         }
-
-        if let Err(e) = self.order_sender.send(order).await {
-            println!("[!] {:?} |:| Error sending order: {:?}", self.name, e);
+        
+        if trade {
+            let order = Order {
+                player_name: self.name.clone(),
+                price,
+                direction,
+                card: card.clone(),
+            };
+    
+            if self.verbose {
+                println!("{:?} |:| Sending order: {:?}", self.name, order);
+            }
+    
+            if let Err(e) = self.order_sender.send(order).await {
+                println!("[!] {:?} |:| Error sending order: {:?}", self.name, e);
+            }
         }
+        
     }
 
 
@@ -173,9 +189,9 @@ impl TiltInventory {
 
                             let mut inventory_lock = inventory.lock().await;
                             if trade.buyer == name {
-                                inventory_lock.change(trade.card, 1);
+                                inventory_lock.change(trade.card, true);
                             } else if trade.seller == name {
-                                inventory_lock.change(trade.card, -1);
+                                inventory_lock.change(trade.card, false);
                             }
                         }
 
@@ -212,7 +228,7 @@ impl TiltInventory {
                             highest = (Card::Heart, inventory_lock.hearts);
                         }
                         let goal_suit = highest.0.get_goal_suit();
-                        *highest_card.lock().await = highest.0;
+                        *highest_card.lock().await = goal_suit;
                         
                         if verbose {
                             println!("{}[+] {:?} |:| Received cards: {:?}{}", CL::DullGreen.get(), name, inventory_lock, CL::End.get());

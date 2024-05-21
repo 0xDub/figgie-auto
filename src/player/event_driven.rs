@@ -55,9 +55,9 @@ impl EventDrivenPlayer {
                         if let Some(trade) = update.trade { 
                             self.trades.push(trade.clone()); // push trade for historical reasons (if we want to analyze) & update inventory
                             if trade.buyer == self.name {
-                                self.inventory.change(trade.card, 1);
+                                self.inventory.change(trade.card, true);
                             } else if trade.seller == self.name {
-                                self.inventory.change(trade.card, -1);
+                                self.inventory.change(trade.card, false);
                             }
                         }
 
@@ -107,21 +107,39 @@ impl EventDrivenPlayer {
 
 
 
-    pub async fn send_order(&self, price: usize, direction: Direction, card: &Card) {
-        let order = Order {
-            player_name: self.name.clone(),
-            price,
-            direction,
-            card: card.clone(),
-        };
+    pub async fn send_order(&self, price: usize, direction: Direction, card: &Card, book: &Book) {
 
-        if self.verbose {
-            println!("{:?} |:| Sending order: {:?}", self.name, order);
+        let mut trade = false;
+        match direction {
+            Direction::Buy => {
+                if book.bid.price < price && book.bid.player_name != self.name {
+                    trade = true;
+                }
+            },
+            Direction::Sell => {
+                if book.ask.price > price && book.ask.player_name != self.name {
+                    trade = true;
+                }
+            }
         }
-
-        if let Err(e) = self.order_sender.send(order).await {
-            println!("[!] {:?} |:| Error sending order: {:?}", self.name, e);
+        
+        if trade {
+            let order = Order {
+                player_name: self.name.clone(),
+                price,
+                direction,
+                card: card.clone(),
+            };
+    
+            if self.verbose {
+                println!("{:?} |:| Sending order: {:?}", self.name, order);
+            }
+    
+            if let Err(e) = self.order_sender.send(order).await {
+                println!("[!] {:?} |:| Error sending order: {:?}", self.name, e);
+            }
         }
+        
     }
 
     pub fn get_max_price_from_seconds(&self, seconds_left: u64) -> usize {
@@ -140,14 +158,14 @@ impl EventDrivenPlayer {
 
     pub async fn pick_off(&self, seconds_left: u64, inventory: usize, book: Book, card: Card) {
         if inventory <= 2 {
-            if book.ask.price < self.get_max_price_from_seconds(seconds_left) && book.ask.player_name != self.name {
-                self.send_order(book.ask.price, Direction::Buy, &card).await;
+            if book.ask.price < self.get_max_price_from_seconds(seconds_left) {
+                self.send_order(book.ask.price, Direction::Buy, &card, &book).await;
             }
         }
 
         if inventory > 0 {
-            if book.ask.price > 5 && book.ask.player_name != self.name {
-                self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
+            if book.ask.price > 5 {
+                self.send_order(book.ask.price - 1, Direction::Sell, &card, &book).await;
             }
         }
     }

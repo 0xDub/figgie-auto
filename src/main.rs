@@ -69,7 +69,7 @@ fn main() {
         let player_name: PlayerName = PlayerName::TiltInventory;
         players.push(player_name.clone());
         let player_handle: tokio::task::JoinHandle<()> = tokio::task::spawn(async move {
-            let mut player: TiltInventory = TiltInventory::new(player_name, false, 4000, 8000, player_1_event_receiver, player_1_order_sender);
+            let mut player: TiltInventory = TiltInventory::new(player_name, false, 2000, 4000, player_1_event_receiver, player_1_order_sender);
             player.start().await;
         });
         handles.push(player_handle);
@@ -80,7 +80,7 @@ fn main() {
         let player_name: PlayerName = PlayerName::Spread;
         players.push(player_name.clone());
         let player_handle: tokio::task::JoinHandle<()> = tokio::task::spawn(async move {
-            let mut player: GenericPlayer = GenericPlayer::new(player_name, false, 4000, 8000, player_2_event_receiver, player_2_order_sender);
+            let mut player: GenericPlayer = GenericPlayer::new(player_name, false, 1000, 2000, player_2_event_receiver, player_2_order_sender);
             player.start().await;
         });
         handles.push(player_handle);
@@ -90,7 +90,7 @@ fn main() {
         let player_name: PlayerName = PlayerName::Seller;
         players.push(player_name.clone());
         let player_handle: tokio::task::JoinHandle<()> = tokio::task::spawn(async move {
-            let mut player: GenericPlayer = GenericPlayer::new(player_name, false, 4000, 8000, player_3_event_receiver, player_3_order_sender);
+            let mut player: GenericPlayer = GenericPlayer::new(player_name, false, 2000, 4000, player_3_event_receiver, player_3_order_sender);
             player.start().await;
         });
         handles.push(player_handle);
