@@ -100,7 +100,7 @@ impl MatchMaker {
 
 
     pub async fn start(&mut self) {
-        let round_duration = tokio::time::Duration::from_secs(60 * 4); // 4 minutes per round
+        let round_duration = tokio::time::Duration::from_secs(30); // 4 minutes per round
 
         loop {
             let mut pot = 0;
@@ -323,12 +323,12 @@ impl MatchMaker {
             }
 
             println!("");
-            println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
-            println!("{}=---=---=---=---=---=---= Round over! =---=---=---=---=---=---={}", CL::Pink.get(), CL::End.get());
-            println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
+            println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
+            println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Round over! =-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
+            println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
             println!("");
             
-            println!("=------------ Game Details ------------=");
+            println!("=--------- Game Details ---------=");
             println!("{} - Players: {}x{}", CL::Dull.get(), self.player_names.len(), CL::End.get());
             println!("{} - Ante: {}{}", CL::Dull.get(), ante, CL::End.get());
             println!("{} - Pot: {}{}", CL::Dull.get(), pot, CL::End.get());
@@ -345,7 +345,7 @@ impl MatchMaker {
             let mut winner: (PlayerName, usize) = (PlayerName::None, 0); // player_id, goal_cards
             let mut tied_winnders: Vec<PlayerName> = Vec::new(); // player_ids
 
-            println!("=----------------------- Inventory -----------------------=");
+            println!("=---------------------------- Inventory ----------------------------=");
             for player_name in &self.player_names {
                 let inventory = self.player_inventories.get(player_name).unwrap();
                 let player_points = self.player_points.get_mut(player_name).unwrap();
@@ -382,7 +382,7 @@ impl MatchMaker {
             // if there's one winner, award them the pot
             // if there's a tie, split the pot evenly between the winners
 
-            println!("=------------------------ Results ------------------------=");
+            println!("=----------------------------- Results -----------------------------=");
             if tied_winnders.is_empty() {
                 println!("{}[+] Player '{:?}' wins the whole pot of {} points{}", CL::Green.get(), winner.0, pot, CL::End.get());
                 let winner_points = self.player_points.get_mut(&winner.0).unwrap();
@@ -400,8 +400,8 @@ impl MatchMaker {
             }
             println!("");
 
-            println!("=--------------------- Updated Points --------------------=");
-            let mut inventory_string = String::from("Points |:| ");
+            println!("=-------------------------- Updated Points -------------------------=");
+            let mut inventory_string = String::from("");
             for player_name in &self.player_names {
                 let initial_points = initial_points.get(player_name).unwrap();
                 let player_points = self.player_points.get(player_name).unwrap();
