@@ -81,6 +81,9 @@ impl GenericPlayer {
 
             println!("{}{:?} | Inventory |:| Spades: {} | Clubs: {} | Diamonds: {} | Hearts: {}{}", CL::Dull.get(), self.name, inventory.spades, inventory.clubs, inventory.diamonds, inventory.hearts, CL::End.get());
 
+            // with the above information, we can now decide what to do
+            // core logic goes here
+
             match self.name {
                 PlayerName::Taker => {
                     self.pick_off(inventory.spades, spades_book, Card::Spade).await;

@@ -12,7 +12,7 @@ pub use match_maker::MatchMaker;
 pub mod player;
 pub use player::PlayerName;
 pub use player::generic::GenericPlayer;
-pub use player::even_driven::EventDrivenPlayer;
+pub use player::event_driven::EventDrivenPlayer;
 
 use crate::player::TiltInventory;
 
@@ -27,20 +27,20 @@ fn main() {
         .expect("Failed to build runtime");
     runtime.block_on(async {
 
+        println!("");
+        println!("{}|==============================================|{}", CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}{}           Welcome to Figgie Auto!            {}{}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::Teal.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}         {}---------------------------{}          {}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::Dull.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}    This is an algorithmic twist on Jane      {}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}   Street's 'Figgie'. However, instead of     {}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}  playing manually, setup some participants   {}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}  and see how they interact with each other.  {}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}       See 'player' for dev framework         {}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}                                              {}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|{}{}    -  All credit goes to Jane Street  -      {}{}|{}", CL::DimLightBlue.get(), CL::End.get(), CL::DullTeal.get(), CL::End.get(), CL::DimLightBlue.get(), CL::End.get());
+        println!("{}|==============================================|{}\n", CL::DimLightBlue.get(), CL::End.get());
 
-        println!("|==============================================|");
-        println!("|{}          Welcome to Figgie Auto!             {}|", CL::Teal.get(), CL::End.get());
-        println!("|        ---------------------------           |");
-        println!("|    This is an algorithmic twist on Jane      |");
-        println!("|   Street's 'Figgie'. However, instead of     |");
-        println!("|  playing manually, setup some participants   |");
-        println!("|  and see how they interact with each other.  |");
-        println!("|       See 'player' for dev framework         |");
-        println!("|                                              |");
-        println!("|{}   -  All credit goes to Jane Street  -       {}|", CL::DullTeal.get(), CL::End.get());
-        println!("|==============================================|\n");
-
-        println!("The games are beginning\n");
+        println!("Let the games begin!\n");
 
 
         let mut handles = Vec::new();
@@ -110,7 +110,7 @@ fn main() {
         let player_name: PlayerName = PlayerName::PickOff;
         players.push(player_name.clone());
         let player_handle: tokio::task::JoinHandle<()> = tokio::task::spawn(async move {
-            let mut player: EventDrivenPlayer = EventDrivenPlayer::new(player_name, true, player_5_event_receiver, player_5_order_sender);
+            let mut player: EventDrivenPlayer = EventDrivenPlayer::new(player_name, false, player_5_event_receiver, player_5_order_sender);
             player.start().await;
         });
         handles.push(player_handle);

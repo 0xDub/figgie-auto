@@ -1,7 +1,7 @@
 use super::{Card, Direction, Book, Trade, Inventory, Order, Event, CL};
 
-pub mod even_driven;
-pub use even_driven::*;
+pub mod event_driven;
+pub use event_driven::*;
 
 pub mod generic;
 pub use generic::GenericPlayer;

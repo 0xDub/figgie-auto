@@ -52,8 +52,8 @@ impl EventDrivenPlayer {
                             continue;
                         }
 
-                        if let Some(trade) = update.trade { // push trade for historical reasons (if we want to analyze) & update inventory
-                            self.trades.push(trade.clone());
+                        if let Some(trade) = update.trade { 
+                            self.trades.push(trade.clone()); // push trade for historical reasons (if we want to analyze) & update inventory
                             if trade.buyer == self.name {
                                 self.inventory.change(trade.card, 1);
                             } else if trade.seller == self.name {
@@ -71,6 +71,11 @@ impl EventDrivenPlayer {
                         let hearts_book = update.hearts;
 
                         // be careful with EventDriven, this can lead to a snowball of events if the # of orders leads from 1 -> many
+                        // core logic goes here
+
+
+                        
+                        
                         match self.name {
                             PlayerName::PickOff => {
                                 self.pick_off(inventory.spades, spades_book, Card::Spade).await;

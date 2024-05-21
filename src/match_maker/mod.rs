@@ -100,11 +100,9 @@ impl MatchMaker {
 
 
     pub async fn start(&mut self) {
-        let round_duration = tokio::time::Duration::from_secs(60 * 4); // 4 minutes per round
+        let round_duration = tokio::time::Duration::from_secs(30); // 4 minutes per round
 
         loop {
-
-            // start the game and send initial cards to players
             let mut pot = 0;
             let ante = 200 / self.player_names.len();
 
@@ -113,8 +111,7 @@ impl MatchMaker {
             println!("{} - Ante: {}{}", CL::Dull.get(), ante, CL::End.get());
             println!("{} - Pot: 200{}", CL::Dull.get(), CL::End.get());
             
-
-            // all players must commit 50 points to the pot to play
+            let initial_points = self.player_points.clone();
             for (player, points) in self.player_points.iter_mut() {
                 if *points < ante {
                     println!("[!] Player {:?} does not have enough points to play", player);
@@ -128,10 +125,10 @@ impl MatchMaker {
             self.get_new_inventories();
 
             println!("{} - Common suit: {:?}{}", CL::Dull.get(), self.common_suit, CL::End.get());
-            println!("{} - Goal Suit: {:?}{}", CL::Dull.get(), self.goal_suit, CL::End.get());
+            println!("{} - Goal suit: {}{:?}{}{}", CL::Dull.get(), CL::LimeGreen.get(), self.goal_suit, CL::End.get(), CL::End.get());
             println!("");
 
-            println!("{}[+] Dealing cards...{}\n", CL::DullTeal.get(), CL::End.get());
+            println!("{}[+] Dealing cards...{}\n", CL::DimLightBlue.get(), CL::End.get());
             
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await; // give the players a little bit to get ready
             
@@ -139,7 +136,7 @@ impl MatchMaker {
                 println!("{}[!] Error sending deal cards event: {:?}{}", CL::Red.get(), e, CL::End.get());
             }
 
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await; // give the players some time to order their cards
 
             // send out the book
             let book_event = Event::Update(Update {
@@ -283,7 +280,7 @@ impl MatchMaker {
                     }
 
                     // =-= Print the Game =-= //
-                    println!("\n{}=--------------------------------------------------------------------={}", CL::Dull.get(), CL::End.get());
+                    println!("\n{}=--------------------------------------------------------------------------={}", CL::Dull.get(), CL::End.get());
 
                     let spades = self.books.get(&Card::Spade).unwrap();
                     let clubs = self.books.get(&Card::Club).unwrap();
@@ -302,7 +299,7 @@ impl MatchMaker {
                     inventory_string.truncate(inventory_string.len() - 3);
 
                     println!("{}{}{}", CL::DullGreen.get(), inventory_string, CL::End.get());
-                    println!("{}=--------------------------------------------------------------------={}\n", CL::Dull.get(), CL::End.get());
+                    println!("{}=--------------------------------------------------------------------------={}\n", CL::Dull.get(), CL::End.get());
 
                     let update = Update {
                         spades: self.books.get(&Card::Spade).unwrap().clone(),
@@ -326,12 +323,17 @@ impl MatchMaker {
             }
 
             println!("");
+            println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
             println!("{}=---=---=---=---=---=---= Round over! =---=---=---=---=---=---={}", CL::Pink.get(), CL::End.get());
+            println!("{}=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-={}", CL::Pink.get(), CL::End.get());
+            println!("\n");
+            
+            println!("=------------ Game Details ------------=");
             println!("{} - Players: {}x{}", CL::Dull.get(), self.player_names.len(), CL::End.get());
             println!("{} - Ante: {}{}", CL::Dull.get(), ante, CL::End.get());
             println!("{} - Pot: {}{}", CL::Dull.get(), pot, CL::End.get());
             println!("{} - Common suit: {:?}{}", CL::Dull.get(), self.common_suit, CL::End.get());
-            println!("{} - Goal suit: {:?}{}", CL::Dull.get(), self.goal_suit, CL::End.get());
+            println!("{} - Goal suit: {}{:?}{}{}", CL::Dull.get(), CL::LimeGreen.get(), self.goal_suit, CL::End.get(), CL::End.get());
             println!("");
 
             self.round += 1;
@@ -343,7 +345,7 @@ impl MatchMaker {
             let mut winner: (PlayerName, usize) = (PlayerName::None, 0); // player_id, goal_cards
             let mut tied_winnders: Vec<PlayerName> = Vec::new(); // player_ids
 
-            println!("{}=----------------------- Inventory -----------------------={}", CL::Dull.get(), CL::End.get());
+            println!("=----------------------- Inventory -----------------------=");
             for player_name in &self.player_names {
                 let inventory = self.player_inventories.get(player_name).unwrap();
                 let player_points = self.player_points.get_mut(player_name).unwrap();
@@ -354,7 +356,14 @@ impl MatchMaker {
                     Card::Heart => inventory.hearts,
                 };
 
-                println!("{}{:?} |:| Spades: {}x | Clubs: {}x | Diamonds: {}x | Hearts: {}x{}", CL::Dull.get(), player_name, inventory.spades, inventory.clubs, inventory.diamonds, inventory.hearts, CL::End.get());
+                let (spade_color, club_color, diamond_color, heart_color) = match self.goal_suit {
+                    Card::Spade => (CL::LimeGreen.get(), CL::Dull.get(), CL::Dull.get(), CL::Dull.get()),
+                    Card::Club => (CL::Dull.get(), CL::LimeGreen.get(), CL::Dull.get(), CL::Dull.get()),
+                    Card::Diamond => (CL::Dull.get(), CL::Dull.get(), CL::LimeGreen.get(), CL::Dull.get()),
+                    Card::Heart => (CL::Dull.get(), CL::Dull.get(), CL::Dull.get(), CL::LimeGreen.get()),
+                };
+
+                println!("{}{}{:?}{} |:| Spades: {}{}x{} | Clubs: {}{}x{} | Diamonds: {}{}x{} | Hearts: {}{}x{}{}", CL::Dull.get(), CL::DimLightBlue.get(), player_name, CL::Dull.get(), spade_color, inventory.spades, CL::Dull.get(), club_color, inventory.clubs, CL::Dull.get(), diamond_color, inventory.diamonds, CL::Dull.get(), heart_color, inventory.hearts, CL::End.get(), CL::End.get());
 
                 if goal_cards >= winner.1 {
                     if goal_cards == winner.1 {
@@ -373,7 +382,7 @@ impl MatchMaker {
             // if there's one winner, award them the pot
             // if there's a tie, split the pot evenly between the winners
 
-            println!("{}=------------------------ Results ------------------------={}", CL::Dull.get(), CL::End.get());
+            println!("=------------------------ Results ------------------------=");
             if tied_winnders.is_empty() {
                 println!("{}[+] Player '{:?}' wins the whole pot of {} points{}", CL::Green.get(), winner.0, pot, CL::End.get());
                 let winner_points = self.player_points.get_mut(&winner.0).unwrap();
@@ -382,23 +391,32 @@ impl MatchMaker {
                 let split = pot / tied_winnders.len();
                 println!("{}[+] Players tie for the pot of {} points{}\n", CL::Teal.get(), pot, CL::End.get());
                 println!("{}------ Tied Players ------{}", CL::Dull.get(), CL::End.get());
-                println!("{}Player {:?} | Goal Cards: {}x | Points: +{}x{}", CL::Dull.get(), winner.0, winner.1, split, CL::End.get());
+                println!("{}{}{:?}{} | Goal Cards: {}x | Points: {}+{}x{}{}", CL::Dull.get(), CL::DimLightBlue.get(), winner.0, CL::Dull.get(), winner.1, CL::LimeGreen.get(), split, CL::End.get(), CL::End.get());
                 for player_name in tied_winnders {
-                    println!("{}Player {:?} | Goal Cards: {}x | Points: +{}x{}", CL::Dull.get(), player_name, winner.1, split, CL::End.get());
+                    println!("{}{}{:?}{} | Goal Cards: {}x | Points: {}+{}x{}{}", CL::Dull.get(), CL::DimLightBlue.get(), player_name, CL::Dull.get(), winner.1, CL::LimeGreen.get(), split, CL::End.get(), CL::End.get());
                     let player_points = self.player_points.get_mut(&player_name).unwrap();
                     *player_points += split;
                 }
             }
             println!("");
 
-            // print the updated scores
+            println!("=--------------------- Updated Points --------------------=");
             let mut inventory_string = String::from("Points |:| ");
-            for player_name in &self.player_names { // iterating this way to maintain order
-                let player_points = self.player_points.get(&player_name).unwrap();
-                inventory_string += &format!("{:?}: {} | ", player_name, player_points);
+            for player_name in &self.player_names {
+                let initial_points = initial_points.get(player_name).unwrap();
+                let player_points = self.player_points.get(player_name).unwrap();
+                let point_change: i32 = *player_points as i32 - *initial_points as i32;
+
+                let change_color = match point_change {
+                    x if x > 0 => CL::Green.get(),
+                    x if x < 0 => CL::Red.get(),
+                    _ => CL::Dull.get(),
+                };
+
+                inventory_string += &format!("{:?}: {} {}({}){} | ", player_name, player_points, change_color, point_change, CL::Dull.get());
             }
             inventory_string.truncate(inventory_string.len() - 3);
-            println!("{}{}{}", CL::Teal.get(), inventory_string, CL::End.get());
+            println!("{}{}{}", CL::Dull.get(), inventory_string, CL::End.get());
             println!("");
 
             tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
