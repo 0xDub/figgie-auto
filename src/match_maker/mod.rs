@@ -100,7 +100,7 @@ impl MatchMaker {
 
 
     pub async fn start(&mut self) {
-        let round_duration = tokio::time::Duration::from_secs(30); // 4 minutes per round
+        let round_duration = tokio::time::Duration::from_secs(60 * 4); // 4 minutes per round
 
         loop {
             let mut pot = 0;
@@ -280,26 +280,26 @@ impl MatchMaker {
                     }
 
                     // =-= Print the Game =-= //
-                    println!("\n{}=--------------------------------------------------------------------------={}", CL::Dull.get(), CL::End.get());
+                    println!("\n=---------------------------------------------------------------------------------=");
 
                     let spades = self.books.get(&Card::Spade).unwrap();
                     let clubs = self.books.get(&Card::Club).unwrap();
                     let diamonds = self.books.get(&Card::Diamond).unwrap();
                     let hearts = self.books.get(&Card::Heart).unwrap();
-                    println!("{}Spades    |:| Bid: ({:?}, {:?}) | Ask: ({:?}, {:?}) |:| Last trade: {:?}{}", CL::DullTeal.get(), spades.bid.price,    spades.bid.player_name,    spades.ask.price,    spades.ask.player_name,    spades.last_trade, CL::End.get());
-                    println!("{}Clubs     |:| Bid: ({:?}, {:?}) | Ask: ({:?}, {:?}) |:| Last trade: {:?}{}", CL::DullTeal.get(), clubs.bid.price,     clubs.bid.player_name,     clubs.ask.price,     clubs.ask.player_name,     clubs.last_trade, CL::End.get());
-                    println!("{}Diamonds  |:| Bid: ({:?}, {:?}) | Ask: ({:?}, {:?}) |:| Last trade: {:?}{}", CL::DullTeal.get(), diamonds.bid.price,  diamonds.bid.player_name,  diamonds.ask.price,  diamonds.ask.player_name,  diamonds.last_trade, CL::End.get());
-                    println!("{}Hearts    |:| Bid: ({:?}, {:?}) | Ask: ({:?}, {:?}) |:| Last trade: {:?}{}", CL::DullTeal.get(), hearts.bid.price,    hearts.bid.player_name,    hearts.ask.price,    hearts.ask.player_name,    hearts.last_trade, CL::End.get());
+                    println!("{}Spades    {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", CL::DullTeal.get(), CL::Dull.get(), CL::Green.get(), spades.bid.price,    CL::Dull.get(), spades.bid.player_name,    CL::PeachRed.get(),  spades.ask.price,    CL::Dull.get(),  spades.ask.player_name,    CL::Dull.get(),  CL::DimLightBlue.get(),  spades.last_trade.unwrap_or_default(),    CL::End.get());
+                    println!("{}Clubs     {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", CL::DullTeal.get(), CL::Dull.get(), CL::Green.get(), clubs.bid.price,     CL::Dull.get(), clubs.bid.player_name,     CL::PeachRed.get(),  clubs.ask.price,     CL::Dull.get(),  clubs.ask.player_name,     CL::Dull.get(),  CL::DimLightBlue.get(),  clubs.last_trade.unwrap_or_default(),     CL::End.get());
+                    println!("{}Diamonds  {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", CL::DullTeal.get(), CL::Dull.get(), CL::Green.get(), diamonds.bid.price,  CL::Dull.get(), diamonds.bid.player_name,  CL::PeachRed.get(),  diamonds.ask.price,  CL::Dull.get(),  diamonds.ask.player_name,  CL::Dull.get(),  CL::DimLightBlue.get(),  diamonds.last_trade.unwrap_or_default(),  CL::End.get());
+                    println!("{}Hearts    {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", CL::DullTeal.get(), CL::Dull.get(), CL::Green.get(), hearts.bid.price,    CL::Dull.get(), hearts.bid.player_name,    CL::PeachRed.get(),  hearts.ask.price,    CL::Dull.get(),  hearts.ask.player_name,    CL::Dull.get(),  CL::DimLightBlue.get(),  hearts.last_trade.unwrap_or_default(),    CL::End.get());
                     
-                    let mut inventory_string = String::from("Points    |:| ");
+                    let mut inventory_string = format!("{}Points    {}|:|{} ", CL::DullGreen.get(), CL::Dull.get(), CL::DullGreen.get());
                     for player_name in &self.player_names {
                         let player_points = self.player_points.get(player_name).unwrap();
                         inventory_string += &format!("{:?}: {} | ", player_name, player_points);
                     }
                     inventory_string.truncate(inventory_string.len() - 3);
 
-                    println!("{}{}{}", CL::DullGreen.get(), inventory_string, CL::End.get());
-                    println!("{}=--------------------------------------------------------------------------={}\n", CL::Dull.get(), CL::End.get());
+                    println!("{}{}", inventory_string, CL::End.get());
+                    println!("=---------------------------------------------------------------------------------=\n");
 
                     let update = Update {
                         spades: self.books.get(&Card::Spade).unwrap().clone(),
@@ -388,7 +388,7 @@ impl MatchMaker {
                 let winner_points = self.player_points.get_mut(&winner.0).unwrap();
                 *winner_points += pot;
             } else {
-                let split = pot / tied_winnders.len();
+                let split = pot / (tied_winnders.len() + 1);
                 println!("{}[+] Players tie for the pot of {} points{}\n", CL::Teal.get(), pot, CL::End.get());
                 println!("{}------ Tied Players ------{}", CL::Dull.get(), CL::End.get());
                 println!("{}{}{:?}{} | Goal Cards: {}x | Points: {}+{}x{}{}", CL::Dull.get(), CL::DimLightBlue.get(), winner.0, CL::Dull.get(), winner.1, CL::LimeGreen.get(), split, CL::End.get(), CL::End.get());
