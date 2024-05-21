@@ -22,7 +22,7 @@ pub struct TiltInventory {
     pub hearts_book: Arc<Mutex<Book>>,
     pub inventory: Arc<Mutex<Inventory>>,
     pub trades: Arc<Mutex<Vec<Trade>>>,
-    pub lowest_card: Arc<Mutex<Card>>,
+    pub highest_card: Arc<Mutex<Card>>,
     pub lower_frequency: u64,
     pub higher_frequency: u64,
     pub event_receiver: Sender<Event>,
@@ -49,7 +49,7 @@ impl TiltInventory {
             hearts_book: Arc::new(Mutex::new(Book::new())),
             inventory: Arc::new(Mutex::new(Inventory::new())),
             trades: Arc::new(Mutex::new(Vec::new())),
-            lowest_card: Arc::new(Mutex::new(Card::Spade)),
+            highest_card: Arc::new(Mutex::new(Card::Spade)),
             lower_frequency,
             higher_frequency,
             event_receiver,
@@ -84,9 +84,9 @@ impl TiltInventory {
             println!("{}{:?} | Inventory |:| Spades: {} | Clubs: {} | Diamonds: {} | Hearts: {}{}", CL::Dull.get(), self.name, inventory.spades, inventory.clubs, inventory.diamonds, inventory.hearts, CL::End.get());
 
             // only buy lowest card we were dealt and aggressively sell everything else
-            let lowest_card = self.lowest_card.lock().await.clone();
+            let goal_suit = self.highest_card.lock().await.clone();
             for card in [Card::Spade, Card::Club, Card::Diamond, Card::Heart].iter() {
-                if *card != lowest_card {
+                if *card != goal_suit {
                     // sell 
                     let (book, current_inventory) = match card {
                         Card::Spade => (spades_book.clone(), inventory.spades),
@@ -95,20 +95,26 @@ impl TiltInventory {
                         Card::Heart => (hearts_book.clone(), inventory.hearts),
                     };
 
-                    if book.ask.price > 4 && current_inventory > 0 && book.ask.player_name != self.name {
-                        self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
+                    if seconds_left > 30 {
+                        if book.ask.price > 4 && current_inventory > 0 && book.ask.player_name != self.name {
+                            self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
+                        }
+                    } else {
+                        if book.ask.player_name != self.name {
+                            self.send_order(1, Direction::Sell, &card).await;
+                        }
                     }
                 }
             }
 
-            let book = match lowest_card {
+            let book = match goal_suit {
                 Card::Spade => spades_book,
                 Card::Club => clubs_book,
                 Card::Diamond => diamonds_book,
                 Card::Heart => hearts_book,
             };
             if book.bid.price < 8 && book.bid.player_name != self.name {
-                self.send_order(book.bid.price + 1, Direction::Buy, &lowest_card).await;
+                self.send_order(book.bid.price + 1, Direction::Buy, &goal_suit).await;
             }
             
 
@@ -153,7 +159,7 @@ impl TiltInventory {
         let name: PlayerName = self.name.clone();
         let verbose: bool = self.verbose;
         let timer = self.timer.clone();
-        let lowest_card = self.lowest_card.clone();
+        let highest_card = self.highest_card.clone();
         
         tokio::task::spawn(async move {
             loop {
@@ -192,20 +198,21 @@ impl TiltInventory {
                         *inventory_lock = players_inventory.get(&name).unwrap().clone();
 
                         // doesn't take into account ties for lowest card
-                        let mut lowest = (Card::Spade, 12); // 12 is the highest possible card value, given the lowest amount of players
-                        if inventory_lock.spades < lowest.1 {
-                            lowest = (Card::Spade, inventory_lock.spades);
+                        let mut highest = (Card::Spade, 12); // 12 is the highest possible card value, given the lowest amount of players
+                        if inventory_lock.spades < highest.1 {
+                            highest = (Card::Spade, inventory_lock.spades);
                         }
-                        if inventory_lock.clubs < lowest.1 {
-                            lowest = (Card::Club, inventory_lock.clubs);
+                        if inventory_lock.clubs < highest.1 {
+                            highest = (Card::Club, inventory_lock.clubs);
                         }
-                        if inventory_lock.diamonds < lowest.1 {
-                            lowest = (Card::Diamond, inventory_lock.diamonds);
+                        if inventory_lock.diamonds < highest.1 {
+                            highest = (Card::Diamond, inventory_lock.diamonds);
                         }
-                        if inventory_lock.hearts < lowest.1 {
-                            lowest = (Card::Heart, inventory_lock.hearts);
+                        if inventory_lock.hearts < highest.1 {
+                            highest = (Card::Heart, inventory_lock.hearts);
                         }
-                        *lowest_card.lock().await = lowest.0;
+                        let goal_suit = highest.0.get_goal_suit();
+                        *highest_card.lock().await = highest.0;
                         
                         if verbose {
                             println!("{}[+] {:?} |:| Received cards: {:?}{}", CL::DullGreen.get(), name, inventory_lock, CL::End.get());

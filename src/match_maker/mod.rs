@@ -159,6 +159,8 @@ impl MatchMaker {
                         continue;
                     }
 
+                    println!("Processing order: {:?} | Queue: {}x", order, self.order_receiver.len());
+
                     let book = self.books.get_mut(&order.card).unwrap();
                     let trade: Option<Trade> = match order.direction {
                         Direction::Buy => {

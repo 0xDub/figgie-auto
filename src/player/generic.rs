@@ -70,7 +70,7 @@ impl GenericPlayer {
                 continue;
             }
 
-            let _seconds_left = 240 - self.timer.lock().await.elapsed().as_secs();
+            let seconds_left = 240 - self.timer.lock().await.elapsed().as_secs();
 
             let inventory = self.inventory.lock().await.clone();
 
@@ -85,26 +85,20 @@ impl GenericPlayer {
             // core logic goes here
 
             match self.name {
-                PlayerName::Taker => {
-                    self.pick_off(inventory.spades, spades_book, Card::Spade).await;
-                    self.pick_off(inventory.clubs, clubs_book, Card::Club).await;
-                    self.pick_off(inventory.diamonds, diamonds_book, Card::Diamond).await;
-                    self.pick_off(inventory.hearts, hearts_book, Card::Heart).await;
-                },
                 PlayerName::Noisy => {
                     self.noisy_trader(inventory, spades_book, clubs_book, diamonds_book, hearts_book, &mut rng).await;
                 },
                 PlayerName::Seller => {
-                    self.sell_inventory(inventory.spades, spades_book, Card::Spade).await;
-                    self.sell_inventory(inventory.clubs, clubs_book, Card::Club).await;
-                    self.sell_inventory(inventory.diamonds, diamonds_book, Card::Diamond).await;
-                    self.sell_inventory(inventory.hearts, hearts_book, Card::Heart).await;
+                    self.sell_inventory(seconds_left, inventory.spades, spades_book, Card::Spade).await;
+                    self.sell_inventory(seconds_left, inventory.clubs, clubs_book, Card::Club).await;
+                    self.sell_inventory(seconds_left, inventory.diamonds, diamonds_book, Card::Diamond).await;
+                    self.sell_inventory(seconds_left, inventory.hearts, hearts_book, Card::Heart).await;
                 },
                 PlayerName::Spread => {
-                    self.provide_spread(inventory.spades, spades_book, Card::Spade).await;
-                    self.provide_spread(inventory.clubs, clubs_book, Card::Club).await;
-                    self.provide_spread(inventory.diamonds, diamonds_book, Card::Diamond).await;
-                    self.provide_spread(inventory.hearts, hearts_book, Card::Heart).await;
+                    self.provide_spread(seconds_left, inventory.spades, spades_book, Card::Spade).await;
+                    self.provide_spread(seconds_left, inventory.clubs, clubs_book, Card::Club).await;
+                    self.provide_spread(seconds_left, inventory.diamonds, diamonds_book, Card::Diamond).await;
+                    self.provide_spread(seconds_left, inventory.hearts, hearts_book, Card::Heart).await;
                 },
                 _ => {}
             }
@@ -129,15 +123,6 @@ impl GenericPlayer {
 
         if let Err(e) = self.order_sender.send(order).await {
             println!("[!] {:?} |:| Error sending order: {:?}", self.name, e);
-        }
-    }
-
-    pub async fn pick_off(&self, inventory: usize, book: Book, card: Card) {
-        if inventory <= 1 {
-            if book.ask.price < 3 && book.ask.price != 0 {
-                self.send_order(book.ask.price, Direction::Buy, &card).await;
-                self.send_order(book.ask.price + 3, Direction::Sell, &card).await;
-            }
         }
     }
 
@@ -177,46 +162,46 @@ impl GenericPlayer {
         }
     }
 
-    pub async fn sell_inventory(&self, inventory: usize, book: Book, card: Card) {
+    pub async fn sell_inventory(&self, seconds_left: u64, inventory: usize, book: Book, card: Card) {
         if inventory > 0 {
-            if let Some(last_trade) = book.last_trade {
-                let price = (last_trade as f32 * 1.5).round() as usize;
-                if price < book.ask.price && book.ask.player_name != self.name {
-                    self.send_order(price, Direction::Sell, &card).await;
+            if seconds_left > 30 {
+                if book.ask.price > 8 && book.ask.player_name != self.name {
+                    self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
                 }
             } else {
-                if 6 < book.ask.price && book.ask.player_name != self.name {
+                if book.ask.price > 4 && book.ask.player_name != self.name {
                     self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
                 }
             }
         }
     }
 
-    pub async fn provide_spread(&self, inventory: usize, book: Book, card: Card) {
+    pub async fn provide_spread(&self, seconds_left: u64, inventory: usize, book: Book, card: Card) {
         if inventory > 0 {
             if let Some(last_trade) = book.last_trade {
-
-                if last_trade > 20 && book.ask.player_name != self.name {
-                    self.send_order(20, Direction::Sell, &card).await;
-                } else {
-                    let price = (last_trade as f32 * 1.5).round() as usize;
-                    if price <= book.ask.price {
-                        self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
-                    }
+                let ask_price = (last_trade as f32 * 1.25).round() as usize;
+                if ask_price > 8 && ask_price < book.ask.price && book.ask.player_name != self.name {
+                    self.send_order(ask_price, Direction::Sell, &card).await;
                 }
             } else {
-                if 11 < book.ask.price && book.ask.player_name != self.name {
-                    if book.ask.price > 20 {
-                        self.send_order(20, Direction::Sell, &card).await;
-                    } else {
-                        self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
-                    }
+                if book.ask.price > 11 && book.ask.player_name != self.name {
+                    self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
+                }
+            }
+        } 
+        if seconds_left > 30 { // we expect flow to gradually become more toxic as time goes on, so we're going to attempt to avoid being picked off
+            if let Some(last_trade) = book.last_trade {
+                let bid_price = (last_trade as f32 * 0.75).round() as usize;
+                if bid_price < 8 && bid_price > book.bid.price && book.bid.player_name != self.name {
+                    self.send_order(bid_price, Direction::Buy, &card).await;
+                }
+            } else {
+                if book.bid.price < 5 && book.bid.player_name != self.name {
+                    self.send_order(book.bid.price + 1, Direction::Sell, &card).await;
                 }
             }
         }
-        if book.bid.price <= 5 && book.bid.player_name != self.name {
-            self.send_order(book.bid.price + 1, Direction::Buy, &card).await;
-        }
+        
     }
 
     pub async fn listen_to_events(&mut self) {

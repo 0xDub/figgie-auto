@@ -27,6 +27,15 @@ impl Card {
             Card::Diamond => (Card::Heart, Card::Spade, Card::Club)
         }
     }
+
+    pub fn get_goal_suit(&self) -> Card {
+        match self {
+            Card::Spade => Card::Club,
+            Card::Club => Card::Spade,
+            Card::Heart => Card::Diamond,
+            Card::Diamond => Card::Heart
+        }
+    }
 }
 
 

@@ -61,7 +61,7 @@ impl EventDrivenPlayer {
                             }
                         }
 
-                        let _seconds_left = 240 - self.timer.elapsed().as_secs();
+                        let seconds_left = 240 - self.timer.elapsed().as_secs();
 
                         let inventory = self.inventory;
 
@@ -78,10 +78,10 @@ impl EventDrivenPlayer {
                         
                         match self.name {
                             PlayerName::PickOff => {
-                                self.pick_off(inventory.spades, spades_book, Card::Spade).await;
-                                self.pick_off(inventory.clubs, clubs_book, Card::Club).await;
-                                self.pick_off(inventory.diamonds, diamonds_book, Card::Diamond).await;
-                                self.pick_off(inventory.hearts, hearts_book, Card::Heart).await;
+                                self.pick_off(seconds_left, inventory.spades, spades_book, Card::Spade).await;
+                                self.pick_off(seconds_left, inventory.clubs, clubs_book, Card::Club).await;
+                                self.pick_off(seconds_left, inventory.diamonds, diamonds_book, Card::Diamond).await;
+                                self.pick_off(seconds_left, inventory.hearts, hearts_book, Card::Heart).await;
                             },
                             _ => {}
                         }
@@ -124,11 +124,24 @@ impl EventDrivenPlayer {
         }
     }
 
-    pub async fn pick_off(&self, inventory: usize, book: Book, card: Card) {
-        if inventory <= 1 {
-            if book.ask.price < 3 && book.ask.player_name != self.name {
+    pub fn get_max_price_from_seconds(&self, seconds_left: u64) -> usize {
+        if seconds_left < 20 {
+            0
+        } else if seconds_left < 40 {
+            1
+        } else if seconds_left < 60 {
+            2
+        } else if seconds_left < 120 {
+            3
+        } else {
+            4
+        }
+    }
+
+    pub async fn pick_off(&self, seconds_left: u64, inventory: usize, book: Book, card: Card) {
+        if inventory <= 2 {
+            if book.ask.price < self.get_max_price_from_seconds(seconds_left) && book.ask.player_name != self.name {
                 self.send_order(book.ask.price, Direction::Buy, &card).await;
-                self.send_order(book.ask.price + 3, Direction::Sell, &card).await;
             }
         }
 
