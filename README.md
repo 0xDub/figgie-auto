@@ -1,5 +1,5 @@
 # Figgie Auto
-An algorithmic take on Jane Street's game, "Figgie". It's an excellent game that simulates "exciting elements of markets and trading". Coming from the HFT world, my strategy was to play the spread but due to laziness I figured I'd write up a program instead of learning the keybindings.
+An algorithmic sandbox for Jane Street's game, "Figgie". It's an excellent game that simulates "exciting elements of markets and trading". Coming from the HFT world, my strategy was to play the spread but due to laziness I figured I'd write up a program instead of learning the keybindings.
 
 There is a lot to unpack in this game, especially when thinking about different types of market participants and how they operate. The most common route I'd imagine is to try and find the goal suit, which is the only suit that is awarded points each round. However, you could also go the route of providing liquidity to the participants, aiding in discovery. Whatever the case, I hope that the journey is fun
 
