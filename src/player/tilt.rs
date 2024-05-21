@@ -72,7 +72,7 @@ impl TiltInventory {
                 continue;
             }
 
-            let _seconds_left = 240 - self.timer.lock().await.elapsed().as_secs();
+            let seconds_left = 240 - self.timer.lock().await.elapsed().as_secs();
 
             let inventory = self.inventory.lock().await.clone();
 
@@ -95,7 +95,7 @@ impl TiltInventory {
                         Card::Heart => (hearts_book.clone(), inventory.hearts),
                     };
 
-                    if book.ask.price > 5 && current_inventory > 0 && book.ask.player_name != self.name {
+                    if book.ask.price > 4 && current_inventory > 0 && book.ask.player_name != self.name {
                         self.send_order(book.ask.price - 1, Direction::Sell, &card).await;
                     }
                 }
@@ -191,17 +191,18 @@ impl TiltInventory {
                         let mut inventory_lock = inventory.lock().await;
                         *inventory_lock = players_inventory.get(&name).unwrap().clone();
 
-                        let mut lowest = (Card::Spade, 12);
-                        if inventory_lock.spades > lowest.1 {
+                        // doesn't take into account ties for lowest card
+                        let mut lowest = (Card::Spade, 12); // 12 is the highest possible card value, given the lowest amount of players
+                        if inventory_lock.spades < lowest.1 {
                             lowest = (Card::Spade, inventory_lock.spades);
                         }
-                        if inventory_lock.clubs > lowest.1 {
+                        if inventory_lock.clubs < lowest.1 {
                             lowest = (Card::Club, inventory_lock.clubs);
                         }
-                        if inventory_lock.diamonds > lowest.1 {
+                        if inventory_lock.diamonds < lowest.1 {
                             lowest = (Card::Diamond, inventory_lock.diamonds);
                         }
-                        if inventory_lock.hearts > lowest.1 {
+                        if inventory_lock.hearts < lowest.1 {
                             lowest = (Card::Heart, inventory_lock.hearts);
                         }
                         *lowest_card.lock().await = lowest.0;
