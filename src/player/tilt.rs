@@ -214,17 +214,17 @@ impl TiltInventory {
                         *inventory_lock = players_inventory.get(&name).unwrap().clone();
 
                         // doesn't take into account ties for lowest card
-                        let mut highest = (Card::Spade, 12); // 12 is the highest possible card value, given the lowest amount of players
-                        if inventory_lock.spades < highest.1 {
+                        let mut highest = (Card::Spade, 0);
+                        if inventory_lock.spades > highest.1 {
                             highest = (Card::Spade, inventory_lock.spades);
                         }
-                        if inventory_lock.clubs < highest.1 {
+                        if inventory_lock.clubs > highest.1 {
                             highest = (Card::Club, inventory_lock.clubs);
                         }
-                        if inventory_lock.diamonds < highest.1 {
+                        if inventory_lock.diamonds > highest.1 {
                             highest = (Card::Diamond, inventory_lock.diamonds);
                         }
-                        if inventory_lock.hearts < highest.1 {
+                        if inventory_lock.hearts > highest.1 {
                             highest = (Card::Heart, inventory_lock.hearts);
                         }
                         let goal_suit = highest.0.get_goal_suit();
