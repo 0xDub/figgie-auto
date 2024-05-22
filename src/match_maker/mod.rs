@@ -168,6 +168,7 @@ impl MatchMaker {
                 println!("[!] Error sending book event: {:?}", e);
             }
 
+            let (spades_color, clubs_color, diamonds_color, hearts_color) = self.goal_suit.get_book_colors();
 
             let start = tokio::time::Instant::now();
             while start.elapsed() < round_duration {
@@ -292,10 +293,10 @@ impl MatchMaker {
                     let clubs = self.books.get(&Card::Club).unwrap();
                     let diamonds = self.books.get(&Card::Diamond).unwrap();
                     let hearts = self.books.get(&Card::Heart).unwrap();
-                    println!("{}Spades    {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", CL::DullTeal.get(), CL::Dull.get(), CL::Green.get(), spades.bid.price,    CL::Dull.get(), spades.bid.player_name,    CL::PeachRed.get(),  spades.ask.price,    CL::Dull.get(),  spades.ask.player_name,    CL::Dull.get(),  CL::DimLightBlue.get(),  spades.last_trade.unwrap_or_default(),    CL::End.get());
-                    println!("{}Clubs     {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", CL::DullTeal.get(), CL::Dull.get(), CL::Green.get(), clubs.bid.price,     CL::Dull.get(), clubs.bid.player_name,     CL::PeachRed.get(),  clubs.ask.price,     CL::Dull.get(),  clubs.ask.player_name,     CL::Dull.get(),  CL::DimLightBlue.get(),  clubs.last_trade.unwrap_or_default(),     CL::End.get());
-                    println!("{}Diamonds  {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", CL::DullTeal.get(), CL::Dull.get(), CL::Green.get(), diamonds.bid.price,  CL::Dull.get(), diamonds.bid.player_name,  CL::PeachRed.get(),  diamonds.ask.price,  CL::Dull.get(),  diamonds.ask.player_name,  CL::Dull.get(),  CL::DimLightBlue.get(),  diamonds.last_trade.unwrap_or_default(),  CL::End.get());
-                    println!("{}Hearts    {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", CL::DullTeal.get(), CL::Dull.get(), CL::Green.get(), hearts.bid.price,    CL::Dull.get(), hearts.bid.player_name,    CL::PeachRed.get(),  hearts.ask.price,    CL::Dull.get(),  hearts.ask.player_name,    CL::Dull.get(),  CL::DimLightBlue.get(),  hearts.last_trade.unwrap_or_default(),    CL::End.get());
+                    println!("{}Spades    {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", spades_color.get(), CL::Dull.get(), CL::Green.get(), spades.bid.price,    CL::Dull.get(), spades.bid.player_name,    CL::PeachRed.get(),  spades.ask.price,    CL::Dull.get(),  spades.ask.player_name,    CL::Dull.get(),  CL::DimLightBlue.get(),  spades.last_trade.unwrap_or_default(),    CL::End.get());
+                    println!("{}Clubs     {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", clubs_color.get(), CL::Dull.get(), CL::Green.get(), clubs.bid.price,     CL::Dull.get(), clubs.bid.player_name,     CL::PeachRed.get(),  clubs.ask.price,     CL::Dull.get(),  clubs.ask.player_name,     CL::Dull.get(),  CL::DimLightBlue.get(),  clubs.last_trade.unwrap_or_default(),     CL::End.get());
+                    println!("{}Diamonds  {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", diamonds_color.get(), CL::Dull.get(), CL::Green.get(), diamonds.bid.price,  CL::Dull.get(), diamonds.bid.player_name,  CL::PeachRed.get(),  diamonds.ask.price,  CL::Dull.get(),  diamonds.ask.player_name,  CL::Dull.get(),  CL::DimLightBlue.get(),  diamonds.last_trade.unwrap_or_default(),  CL::End.get());
+                    println!("{}Hearts    {}|:| Bid: ({}{:?}{}, {:?}) | Ask: ({}{:?}{}, {:?}) |:|{} Last trade: {}{:?}{}", hearts_color.get(), CL::Dull.get(), CL::Green.get(), hearts.bid.price,    CL::Dull.get(), hearts.bid.player_name,    CL::PeachRed.get(),  hearts.ask.price,    CL::Dull.get(),  hearts.ask.player_name,    CL::Dull.get(),  CL::DimLightBlue.get(),  hearts.last_trade.unwrap_or_default(),    CL::End.get());
                     
                     let mut inventory_string = format!("{}Points    {}|:|{} ", CL::DullGreen.get(), CL::Dull.get(), CL::DullGreen.get());
                     for player_name in &self.player_names {
@@ -315,6 +316,8 @@ impl MatchMaker {
                         trade,
                     };
                     let update_event = Event::Update(update);
+
+                    //println!("{}[+] Done processing request{}", CL::Green.get(), CL::End.get());
 
                     if let Err(e) = self.event_sender.send(update_event) {
                         println!("[!] Error sending update event: {:?}", e);

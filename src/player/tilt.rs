@@ -95,12 +95,14 @@ impl TiltInventory {
                         Card::Heart => (hearts_book.clone(), inventory.hearts),
                     };
 
-                    if seconds_left > 30 {
-                        if book.ask.price > 4 && current_inventory > 0 {
-                            self.send_order(book.ask.price - 1, Direction::Sell, &card, &book).await;
+                    if current_inventory > 0 {
+                        if seconds_left > 30 {
+                            if book.ask.price > 4 {
+                                self.send_order(book.ask.price - 1, Direction::Sell, &card, &book).await;
+                            }
+                        } else {
+                            self.send_order(3, Direction::Sell, &card, &book).await; // 3 since this is the break-point between a blanket buy-all strategy becoming profitable buying up equal amounts of inventory at 3
                         }
-                    } else {
-                        self.send_order(3, Direction::Sell, &card, &book).await; // 3 since this is the break-point between a blanket buy-all strategy becoming profitable buying up equal amounts of inventory at 3
                     }
                 }
             }
@@ -111,6 +113,12 @@ impl TiltInventory {
                 Card::Diamond => diamonds_book,
                 Card::Heart => hearts_book,
             };
+
+            if book.ask.price <= 5 {
+                // send market buy
+                self.send_order(book.ask.price, Direction::Buy, &goal_suit, &book).await;
+            }
+
             if book.bid.price < 8 {
                 self.send_order(book.bid.price + 1, Direction::Buy, &goal_suit, &book).await;
             }

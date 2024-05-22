@@ -70,8 +70,10 @@ impl EventDrivenPlayer {
                         let diamonds_book = update.diamonds;
                         let hearts_book = update.hearts;
 
+                        //println!("{}{:?} | Inventory |:| Spades: {} | Clubs: {} | Diamonds: {} | Hearts: {}{}", CL::Dull.get(), self.name, inventory.spades, inventory.clubs, inventory.diamonds, inventory.hearts, CL::End.get());
+
                         // be careful with EventDriven, this can lead to a snowball of events if the # of orders leads from 1 -> many
-                        // core logic goes here
+                        // core logic goes here (example below)
 
 
                         
@@ -101,6 +103,8 @@ impl EventDrivenPlayer {
                         self.trading.store(false, Ordering::Release);
                     }
                 }
+            } else {
+                println!("{}[!] {:?} |:| Event receiver dropped{}", CL::Red.get(), self.name, CL::End.get());
             }
         }
     }
@@ -142,28 +146,32 @@ impl EventDrivenPlayer {
         
     }
 
-    pub fn get_max_price_from_seconds(&self, seconds_left: u64) -> usize {
+    pub fn get_max_price_from_seconds(&self, seconds_left: u64) -> (usize, usize) {
         if seconds_left < 20 {
-            0
+            (0, 0)
         } else if seconds_left < 40 {
-            1
+            (2, 3)
         } else if seconds_left < 60 {
-            2
+            (3, 4)
         } else if seconds_left < 120 {
-            3
+            (4, 6)
         } else {
-            4
+            (5, 8)
         }
     }
 
     pub async fn pick_off(&self, seconds_left: u64, inventory: usize, book: Book, card: Card) {
+        let (open_price, close_price) = self.get_max_price_from_seconds(seconds_left);
         if inventory <= 2 {
-            if book.ask.price < self.get_max_price_from_seconds(seconds_left) {
+            if book.ask.price < open_price {
                 self.send_order(book.ask.price, Direction::Buy, &card, &book).await;
             }
         }
 
         if inventory > 0 {
+            if book.bid.price >= close_price {
+                self.send_order(book.bid.price, Direction::Sell, &card, &book).await;
+            }
             if book.ask.price > 5 {
                 self.send_order(book.ask.price - 1, Direction::Sell, &card, &book).await;
             }

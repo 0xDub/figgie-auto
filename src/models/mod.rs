@@ -1,4 +1,4 @@
-use super::PlayerName;
+use super::{PlayerName, CL};
 
 pub mod event;
 pub use event::*;
@@ -36,6 +36,17 @@ impl Card {
             Card::Diamond => Card::Heart
         }
     }
+
+    pub fn get_book_colors(&self) -> (CL, CL, CL, CL) {
+        match self {
+            Card::Spade => (CL::LimeGreen, CL::DullTeal, CL::DullTeal, CL::DullTeal),
+            Card::Club => (CL::DullTeal, CL::LimeGreen, CL::DullTeal, CL::DullTeal),
+            Card::Heart => (CL::DullTeal, CL::DullTeal, CL::DullTeal, CL::LimeGreen),
+            Card::Diamond => (CL::DullTeal, CL::DullTeal, CL::LimeGreen, CL::DullTeal)
+        }
+
+        // (spades_color, clubs_color, diamonds_color, hearts_color) | apologies for the diagonal line not linin
+    } 
 }
 
 

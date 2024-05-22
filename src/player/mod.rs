@@ -18,6 +18,8 @@ pub enum PlayerName {
     WildestDreams,
     PickOff,
     TiltInventory,
+    TheHoarder,
+    PrayingMantis,
     None,
 }
 

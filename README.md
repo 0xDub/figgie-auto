@@ -19,6 +19,8 @@ You can find barebones examples for both in the `player` folder.
 - `Seller`: Quite conservative and defensive one, it attempts to sell all of its inventory and make up the cost of the ante
 - `Noisy`: Consider this one as retail
 - `PickOff`: An event-driven, opportunistic player - picking up cheap inventory in an attempt to sell it at a later price
+- `TheHoarder`: The goal for this strategy is to amass 6x of each card to mathematically guarantee a win and secure the pot. High risk, low reward, yet the pitfalls are quite insightful
+- `PrayingMantis`: A byproduct of `TheHoarder`'s pitfalls; like `Seller` it attempts to offload it's inventory then aggressively buys up inventory of the perceived goal suit, based on last trade price. It has its own insightful pitfalls as well
 
 <hr>
 
