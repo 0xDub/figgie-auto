@@ -14,7 +14,7 @@ You can find barebones examples for both in the `player` folder.
 <hr>
 
 ### Current Players
-- `TiltInventory`: On being dealt a hand, it finds the lowest card and semi-aggressively bids on this market while selling all their other cards
+- `TiltInventory`: On being dealt a hand, it finds the highest card and assumes it's the common suit. It semi-aggressively bids on the predicted goal suit market while selling all their other cards
 - `Spread`: A dumb market-maker, placing a wide quote range on all cards, attempting to profit off the order flow
 - `Seller`: Quite conservative and defensive one, it attempts to sell all of its inventory and make up the cost of the ante
 - `Noisy`: Consider this one as retail
